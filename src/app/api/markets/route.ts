@@ -22,14 +22,37 @@ export async function GET() {
   return NextResponse.json(markets);
 }
 
+const CREATION_FEE = 20;
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userId = (session.user as any).id;
+
+  // Check user balance
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { balance: true },
+  });
+
+  if (!user || user.balance < CREATION_FEE) {
+    return NextResponse.json(
+      { error: `Insufficient balance. A $${CREATION_FEE} fee is required to create a market. Please deposit funds.` },
+      { status: 402 }
+    );
+  }
+
   const body = await req.json();
   const { title, description, category, closesAt, vigPercent } = body;
+
+  // Deduct creation fee and create market in a transaction-like manner
+  await prisma.user.update({
+    where: { id: userId },
+    data: { balance: { decrement: CREATION_FEE } },
+  });
 
   const market = await prisma.market.create({
     data: {
@@ -38,10 +61,10 @@ export async function POST(req: Request) {
       category,
       closesAt: closesAt ? new Date(closesAt) : null,
       vigPercent: vigPercent ?? 2.5,
-      creatorId: (session.user as any).id,
+      creatorId: userId,
     },
   });
 
   await cacheDel("markets:*");
-  return NextResponse.json(market);
+  return NextResponse.json({ ...market, feeDeducted: CREATION_FEE });
 }
