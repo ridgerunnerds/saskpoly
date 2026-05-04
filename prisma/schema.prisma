@@ -34,20 +34,34 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String?   @unique
-  name          String?
-  role          Role      @default(USER)
-  password      String?
-  createdAt     DateTime  @default(now())
-  accounts      Account[]
-  sessions      Session[]
-  markets       Market[]
-  bets          Bet[]
-  resolutions   Resolution[]
-  stripePayments StripePayment[]
-  deposits       Deposit[]
-  balance        Float     @default(0)
+  id               String    @id @default(cuid())
+  email            String?   @unique
+  name             String?
+  role             Role      @default(USER)
+  password         String?
+  createdAt        DateTime  @default(now())
+  accounts         Account[]
+  sessions         Session[]
+  markets          Market[]
+  bets             Bet[]
+  resolutions      Resolution[]
+  stripePayments   StripePayment[]
+  deposits         Deposit[]
+  balance          Float     @default(0)
+
+  // Tax compliance fields
+  fullLegalName    String?
+  dateOfBirth      String?
+  phone            String?
+  addressStreet    String?
+  addressCity      String?
+  addressProvince  String?
+  addressPostalCode String?
+  addressCountry   String?   @default("Canada")
+  sin              String?   // Social Insurance Number
+  termsAccepted    Boolean   @default(false)
+  termsAcceptedAt  DateTime?
+  profileComplete  Boolean   @default(false)
 }
 
 model StripePayment {

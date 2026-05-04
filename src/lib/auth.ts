@@ -31,6 +31,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          profileComplete: user.profileComplete,
         };
       },
     }),
@@ -85,12 +86,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
+        token.profileComplete = (user as any).profileComplete;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as any).role = token.role;
+        (session.user as any).profileComplete = token.profileComplete;
       }
       return session;
     },
