@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { PlusCircle, Wallet, AlertCircle } from "lucide-react";
+import { PlusCircle, Wallet, AlertCircle, Shield } from "lucide-react";
 import Link from "next/link";
 
 const CREATION_FEE = 20;
@@ -28,7 +28,8 @@ export default function CreatePage() {
     }
   }, [session]);
 
-  const hasEnough = balance >= CREATION_FEE;
+  const isStaff = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "AUDIT";
+  const hasEnough = isStaff || balance >= CREATION_FEE;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,33 +73,45 @@ export default function CreatePage() {
         Create Market
       </h1>
 
-      <div className={`rounded-xl border p-4 mb-6 flex items-center justify-between ${hasEnough ? "border-emerald-800 bg-emerald-950/20" : "border-amber-800 bg-amber-950/20"}`}>
-        <div className="flex items-center gap-3">
-          <Wallet className={`w-5 h-5 ${hasEnough ? "text-emerald-400" : "text-amber-400"}`} />
+      {isStaff ? (
+        <div className="rounded-xl border border-emerald-800 bg-emerald-950/20 p-4 mb-6 flex items-center gap-3">
+          <Shield className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <div>
-            <p className="text-sm text-white font-medium">Creation Fee: ${CREATION_FEE}</p>
-            <p className="text-xs text-zinc-400">This will be deducted from your account balance</p>
+            <p className="text-sm text-white font-medium">Staff Account</p>
+            <p className="text-xs text-zinc-400">You can create markets for free.</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-white font-medium">${balance.toFixed(2)}</p>
-          <p className="text-xs text-zinc-400">Your Balance</p>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className={`rounded-xl border p-4 mb-6 flex items-center justify-between ${hasEnough ? "border-emerald-800 bg-emerald-950/20" : "border-amber-800 bg-amber-950/20"}`}>
+            <div className="flex items-center gap-3">
+              <Wallet className={`w-5 h-5 ${hasEnough ? "text-emerald-400" : "text-amber-400"}`} />
+              <div>
+                <p className="text-sm text-white font-medium">Creation Fee: ${CREATION_FEE}</p>
+                <p className="text-xs text-zinc-400">This will be deducted from your account balance</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-white font-medium">${balance.toFixed(2)}</p>
+              <p className="text-xs text-zinc-400">Your Balance</p>
+            </div>
+          </div>
 
-      {!hasEnough && (
-        <div className="rounded-xl border border-amber-800 bg-amber-950/20 p-4 mb-6 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-          <div>
-            <p className="text-sm text-amber-400 font-medium">Insufficient Balance</p>
-            <p className="text-xs text-zinc-400">
-              You need ${CREATION_FEE} to create a market.{" "}
-              <Link href="/deposit" className="text-emerald-400 hover:underline">
-                Deposit funds
-              </Link>
-            </p>
-          </div>
-        </div>
+          {!hasEnough && (
+            <div className="rounded-xl border border-amber-800 bg-amber-950/20 p-4 mb-6 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-amber-400 font-medium">Insufficient Balance</p>
+                <p className="text-xs text-zinc-400">
+                  You need ${CREATION_FEE} to create a market.{" "}
+                  <Link href="/deposit" className="text-emerald-400 hover:underline">
+                    Deposit funds
+                  </Link>
+                </p>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {error && (

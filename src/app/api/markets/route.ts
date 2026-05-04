@@ -30,29 +30,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as any).id;
+  const user = session.user as any;
+  const userId = user.id;
+  const isStaff = user.role === "ADMIN" || user.role === "AUDIT";
 
-  // Check user balance
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { balance: true },
-  });
+  if (!isStaff) {
+    // Check user balance for non-staff
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { balance: true },
+    });
 
-  if (!user || user.balance < CREATION_FEE) {
-    return NextResponse.json(
-      { error: `Insufficient balance. A $${CREATION_FEE} fee is required to create a market. Please deposit funds.` },
-      { status: 402 }
-    );
+    if (!dbUser || dbUser.balance < CREATION_FEE) {
+      return NextResponse.json(
+        { error: `Insufficient balance. A $${CREATION_FEE} fee is required to create a market. Please deposit funds.` },
+        { status: 402 }
+      );
+    }
+
+    // Deduct creation fee
+    await prisma.user.update({
+      where: { id: userId },
+      data: { balance: { decrement: CREATION_FEE } },
+    });
   }
 
   const body = await req.json();
   const { title, description, category, closesAt, vigPercent } = body;
-
-  // Deduct creation fee and create market in a transaction-like manner
-  await prisma.user.update({
-    where: { id: userId },
-    data: { balance: { decrement: CREATION_FEE } },
-  });
 
   const market = await prisma.market.create({
     data: {
@@ -66,5 +70,5 @@ export async function POST(req: Request) {
   });
 
   await cacheDel("markets:*");
-  return NextResponse.json({ ...market, feeDeducted: CREATION_FEE });
+  return NextResponse.json({ ...market, feeDeducted: isStaff ? 0 : CREATION_FEE });
 }
