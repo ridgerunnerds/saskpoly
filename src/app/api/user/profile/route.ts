@@ -24,7 +24,7 @@ export async function GET() {
       addressProvince: true,
       addressPostalCode: true,
       addressCountry: true,
-      sin: true,
+
       termsAccepted: true,
       termsAcceptedAt: true,
       profileComplete: true,

@@ -24,7 +24,6 @@ export async function POST(req: Request) {
       addressProvince,
       addressPostalCode,
       addressCountry,
-      sin,
       termsAccepted,
     } = body;
 
@@ -74,17 +73,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate SIN format (9 digits)
-    if (sin) {
-      const sinDigits = sin.replace(/\D/g, "");
-      if (sinDigits.length !== 9) {
-        return NextResponse.json(
-          { error: "SIN must be 9 digits" },
-          { status: 400 }
-        );
-      }
-    }
-
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
@@ -108,7 +96,6 @@ export async function POST(req: Request) {
         addressProvince,
         addressPostalCode: addressPostalCode.toUpperCase(),
         addressCountry: addressCountry || "Canada",
-        sin: sin ? sin.replace(/\D/g, "") : null,
         termsAccepted: true,
         termsAcceptedAt: new Date(),
         profileComplete: true,

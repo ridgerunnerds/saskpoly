@@ -38,7 +38,7 @@ export function Navbar() {
     fullLegalName: "",
     dateOfBirth: "",
     phone: "",
-    sin: "",
+
     addressStreet: "",
     addressCity: "",
     addressProvince: "",
@@ -64,7 +64,6 @@ export function Navbar() {
       fullLegalName: "",
       dateOfBirth: "",
       phone: "",
-      sin: "",
       addressStreet: "",
       addressCity: "",
       addressProvince: "",
@@ -382,17 +381,7 @@ export function Navbar() {
                         placeholder="(306) 555-0123"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-300 mb-1">SIN (optional)</label>
-                      <input
-                        type="text"
-                        value={form.sin}
-                        onChange={(e) => setForm({ ...form, sin: e.target.value })}
-                        className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none text-sm"
-                        placeholder="123-456-789"
-                      />
-                      <p className="text-xs text-zinc-600 mt-1">Required for withdrawals over $600/year</p>
-                    </div>
+
                     <div className="flex gap-2">
                       <button
                         type="button"

@@ -58,7 +58,6 @@ model User {
   addressProvince  String?
   addressPostalCode String?
   addressCountry   String?   @default("Canada")
-  sin              String?   // Social Insurance Number
   termsAccepted    Boolean   @default(false)
   termsAcceptedAt  DateTime?
   profileComplete  Boolean   @default(false)

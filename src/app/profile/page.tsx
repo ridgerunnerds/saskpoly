@@ -82,7 +82,7 @@ export default function ProfilePage() {
         {field("Full Legal Name", profile?.fullLegalName)}
         {field("Date of Birth", profile?.dateOfBirth)}
         {field("Phone", profile?.phone)}
-        {field("SIN", profile?.sin ? `***-***-${profile.sin.slice(-3)}` : null)}
+
       </div>
 
       <div className="rounded-2xl border border-zinc-800 p-6 mb-6">
