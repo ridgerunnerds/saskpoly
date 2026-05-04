@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - SaskPolly{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8">
+  <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+    <h2 class="text-2xl font-bold text-white mb-6">Sign In</h2>
+    <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-zinc-300 mb-1">Email</label>
+        <input type="email" name="email" required class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="you@example.com">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-zinc-300 mb-1">Password</label>
+        <input type="password" name="password" required class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none" placeholder="••••••••">
+      </div>
+      <button type="submit" class="w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 transition">Sign In</button>
+    </form>
+    <div class="mt-4 text-center text-sm text-zinc-500">
+      Don't have an account? <a href="/register" class="text-emerald-400 hover:underline">Sign up</a>
+    </div>
+    <div class="mt-4 border-t border-zinc-800 pt-4 text-center text-xs text-zinc-600">
+      Staff can use the Admin or Audit password.
+    </div>
+  </div>
+</div>
+{% endblock %}

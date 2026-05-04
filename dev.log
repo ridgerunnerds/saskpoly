@@ -1,0 +1,17 @@
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.100:3000
+- Environments: .env
+✓ Ready in 477ms
+
+○ Compiling / ...
+Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+ GET / 200 in 13.9s (next.js: 12.4s, application-code: 1440ms)
+ HEAD / 200 in 93ms (next.js: 11ms, application-code: 82ms)
+[browser] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+ GET /api/markets 200 in 1169ms (next.js: 1029ms, application-code: 140ms)
+[browser] Origin http://10.0.0.100:3000 not found on Allowlist - update configuration on cloud.reown.com 
+ GET /api/auth/session 200 in 2.1s (next.js: 2.1s, application-code: 20ms)
+ GET /api/auth/session 200 in 86ms (next.js: 78ms, application-code: 8ms)
+ GET / 200 in 57ms (next.js: 8ms, application-code: 49ms)
+[?25h

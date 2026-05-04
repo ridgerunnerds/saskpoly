@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}{{ market.title }} - SaskPolly{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+  <a href="/markets" class="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-white mb-6">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+    Back to markets
+  </a>
+
+  <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+    <div class="flex items-center gap-3 mb-4">
+      {% if market.status.value == 'OPEN' %}
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      {% elif market.status.value == 'RESOLVED' %}
+        <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      {% else %}
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      {% endif %}
+      <span class="text-sm font-medium text-zinc-400 uppercase">{{ market.status.value }}</span>
+      <span class="text-xs text-zinc-600">|</span>
+      <span class="text-sm text-zinc-500">{{ market.category }}</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-white">{{ market.title }}</h1>
+    <p class="mt-4 text-zinc-300 leading-relaxed">{{ market.description }}</p>
+
+    <div class="mt-8">
+      <div class="flex justify-between text-sm text-zinc-300 mb-2">
+        <span>Yes {{ yes_odds|round(1) }}% - ${{ "{:,.0f}".format(market.yes_pool) }}</span>
+        <span>No {{ (100 - yes_odds)|round(1) }}% - ${{ "{:,.0f}".format(market.no_pool) }}</span>
+      </div>
+      <div class="h-3 rounded-full bg-zinc-800 overflow-hidden">
+        <div class="h-full bg-emerald-500 transition-all" style="width: {{ yes_odds }}%"></div>
+      </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-3 gap-4 text-center">
+      <div class="rounded-xl border border-zinc-800 p-4">
+        <div class="text-lg font-bold text-white">${{ "{:,.0f}".format(market.total_volume) }}</div>
+        <div class="text-xs text-zinc-500">Total Volume</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 p-4">
+        <div class="text-lg font-bold text-white">{{ market.bets|length }}</div>
+        <div class="text-xs text-zinc-500">Bets</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 p-4">
+        <div class="text-lg font-bold text-white">{{ market.vig_percent }}%</div>
+        <div class="text-xs text-zinc-500">Vig</div>
+      </div>
+    </div>
+
+    {% if market.status.value == 'OPEN' %}
+    <div class="mt-8 border-t border-zinc-800 pt-8" id="bet-section">
+      <h3 class="text-lg font-semibold text-white mb-4">Place Bet</h3>
+      {% if not current_user.is_authenticated %}
+        <p class="text-sm text-zinc-500"><a href="/login" class="text-emerald-400 hover:underline">Sign in</a> to place bets.</p>
+      {% else %}
+        <div id="bet-form" class="space-y-4">
+          <div class="flex gap-3">
+            <button type="button" id="btn-yes" onclick="selectOutcome(true)" class="flex-1 py-3 rounded-xl border font-semibold transition border-zinc-700 text-zinc-300 hover:border-emerald-500">
+              Yes
+            </button>
+            <button type="button" id="btn-no" onclick="selectOutcome(false)" class="flex-1 py-3 rounded-xl border font-semibold transition border-zinc-700 text-zinc-300 hover:border-red-500">
+              No
+            </button>
+          </div>
+          <input type="number" id="amount" placeholder="Amount (USD)" step="0.01" min="1"
+            class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none">
+          <button type="button" id="btn-continue" onclick="createPaymentIntent()"
+            class="w-full rounded-xl bg-emerald-500 py-3 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition">
+            Continue to Payment
+          </button>
+        </div>
+
+        <div id="payment-form" class="hidden space-y-4">
+          <div class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3">
+            <div id="card-element"></div>
+            <div id="card-errors" class="text-sm text-red-400 mt-2"></div>
+          </div>
+          <div class="flex gap-3">
+            <button type="button" onclick="goBack()" class="flex-1 rounded-xl border border-zinc-700 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-900 transition">
+              Back
+            </button>
+            <button type="button" id="btn-pay" onclick="confirmPayment()"
+              class="flex-1 rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition">
+              Pay & Place Bet
+            </button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_audit()) and market.status.value == 'OPEN' %}
+    <div class="mt-8 border-t border-zinc-800 pt-8">
+      <h3 class="text-lg font-semibold text-white mb-4">Resolve Market</h3>
+      <div class="flex gap-3">
+        <button onclick="resolveMarket(true)" class="flex-1 py-3 rounded-xl border border-emerald-700 text-emerald-400 hover:bg-emerald-950 transition">
+          Resolve Yes
+        </button>
+        <button onclick="resolveMarket(false)" class="flex-1 py-3 rounded-xl border border-red-700 text-red-400 hover:bg-red-950 transition">
+          Resolve No
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if market.bets %}
+    <div class="mt-8 border-t border-zinc-800 pt-8">
+      <h3 class="text-lg font-semibold text-white mb-4">Recent Bets</h3>
+      <div class="space-y-2">
+        {% for bet in market.bets[:10] %}
+        <div class="flex items-center justify-between rounded-lg border border-zinc-800 px-4 py-3 text-sm">
+          <span class="text-zinc-400">{{ bet.user.name or bet.user.email }}</span>
+          <span class="font-medium {% if bet.outcome %}text-emerald-400{% else %}text-red-400{% endif %}">
+            {{ 'Yes' if bet.outcome else 'No' }}
+          </span>
+          <span class="text-white">${{ "{:,.2f}".format(bet.amount) }}</span>
+          <span class="text-xs text-zinc-500">{{ bet.status.value }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const stripeKey = "{{ stripe_key }}";
+const stripe = Stripe(stripeKey);
+let elements;
+let card;
+let clientSecret = "";
+let paymentIntentId = "";
+let selectedOutcome = null;
+
+function selectOutcome(outcome) {
+  selectedOutcome = outcome;
+  document.getElementById('btn-yes').className = outcome
+    ? "flex-1 py-3 rounded-xl border font-semibold transition bg-emerald-500 border-emerald-500 text-black"
+    : "flex-1 py-3 rounded-xl border font-semibold transition border-zinc-700 text-zinc-300 hover:border-emerald-500";
+  document.getElementById('btn-no').className = !outcome
+    ? "flex-1 py-3 rounded-xl border font-semibold transition bg-red-500 border-red-500 text-black"
+    : "flex-1 py-3 rounded-xl border font-semibold transition border-zinc-700 text-zinc-300 hover:border-red-500";
+}
+
+async function createPaymentIntent() {
+  const amount = parseFloat(document.getElementById('amount').value);
+  if (selectedOutcome === null || !amount || amount <= 0) return;
+
+  document.getElementById('btn-continue').disabled = true;
+  document.getElementById('btn-continue').textContent = "Loading...";
+
+  const res = await fetch("/api/stripe/payment-intent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount, market_id: {{ market.id }}, outcome: selectedOutcome })
+  });
+  const data = await res.json();
+
+  if (data.client_secret) {
+    clientSecret = data.client_secret;
+    paymentIntentId = "";
+    document.getElementById('bet-form').classList.add('hidden');
+    document.getElementById('payment-form').classList.remove('hidden');
+
+    elements = stripe.elements({ clientSecret });
+    card = elements.create('card', {
+      style: {
+        base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#71717a' } },
+        invalid: { color: '#f87171' }
+      }
+    });
+    card.mount('#card-element');
+  } else {
+    alert(data.error || "Failed to initialize payment");
+  }
+
+  document.getElementById('btn-continue').disabled = false;
+  document.getElementById('btn-continue').textContent = "Continue to Payment";
+}
+
+function goBack() {
+  document.getElementById('payment-form').classList.add('hidden');
+  document.getElementById('bet-form').classList.remove('hidden');
+  if (card) card.destroy();
+  clientSecret = "";
+}
+
+async function confirmPayment() {
+  if (!stripe || !elements) return;
+  document.getElementById('btn-pay').disabled = true;
+  document.getElementById('btn-pay').textContent = "Processing...";
+
+  const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+    payment_method: { card: card }
+  });
+
+  if (error) {
+    document.getElementById('card-errors').textContent = error.message;
+    document.getElementById('btn-pay').disabled = false;
+    document.getElementById('btn-pay').textContent = "Pay & Place Bet";
+  } else if (paymentIntent.status === 'succeeded') {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const res = await fetch("/api/bets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        market_id: {{ market.id }},
+        amount,
+        outcome: selectedOutcome,
+        payment_intent_id: paymentIntent.id
+      })
+    });
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      const err = await res.json();
+      alert(err.error || "Failed to place bet");
+      document.getElementById('btn-pay').disabled = false;
+      document.getElementById('btn-pay').textContent = "Pay & Place Bet";
+    }
+  }
+}
+
+async function resolveMarket(outcome) {
+  const res = await fetch("/api/markets/{{ market.id }}/resolve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outcome })
+  });
+  if (res.ok) window.location.reload();
+}
+</script>
+{% endblock %}

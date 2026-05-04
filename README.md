@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SaskPolly
 
-## Getting Started
+Saskatchewan's first crypto prediction market. Bet on darts, local leagues, sports, weather, and politics using MetaMask or Phantom wallets.
 
-First, run the development server:
+## Features
+
+- **Crypto Wallets**: Connect MetaMask, Phantom, or any WalletConnect-compatible wallet
+- **Prediction Markets**: Create and bet on binary outcome markets
+- **Self-Regulating Odds**: Prices adjust automatically based on pool sizes
+- **Admin & Audit**: Role-based access for market resolution and oversight
+- **Stripe Integration**: Ready for fiat on/off ramps
+- **Vig Collection**: Platform takes a configurable fee on every bet
+
+## Tech Stack
+
+- Next.js 16 + TypeScript + Tailwind CSS
+- Prisma 7 + SQLite (easily swappable to PostgreSQL)
+- NextAuth.js for staff login (Admin/Audit)
+- RainbowKit + wagmi + viem for EVM wallet connection
+- Hardhat for Solidity smart contract development
+- Stripe for payments
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+
+# Run database migrations
+npx prisma migrate dev
+
+# Seed sample markets
+npx tsx prisma/seed.ts
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Staff Login
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Admin**: Use any email + password set in `ADMIN_PASSWORD`
+- **Audit**: Use any email + password set in `AUDIT_PASSWORD`
 
-## Learn More
+## Smart Contract
 
-To learn more about Next.js, take a look at the following resources:
+A sample Solidity prediction market contract is included in `contracts/SaskPollyMarket.sol`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npx hardhat compile
+npx hardhat test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy to Vercel
 
-## Deploy on Vercel
+1. Push to GitHub
+2. Import into Vercel
+3. Set environment variables in Vercel dashboard
+4. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For production, switch from SQLite to PostgreSQL and update `DATABASE_URL`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT

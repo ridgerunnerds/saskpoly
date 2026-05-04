@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SaskPolly{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              950: '#09090b',
+              900: '#18181b',
+              800: '#27272a',
+              700: '#3f3f46',
+              600: '#52525b',
+              500: '#71717a',
+              400: '#a1a1aa',
+              300: '#d4d4d8',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #000; color: #fff; }
+    .StripeElement { color: white; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-full flex flex-col bg-black text-white">
+  <nav class="border-b border-zinc-800 bg-black">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+          <span class="text-xl font-bold text-white">SaskPolly</span>
+        </a>
+        <div class="hidden md:flex items-center gap-6">
+          <a href="/markets" class="text-sm text-zinc-300 hover:text-white transition">Markets</a>
+          <a href="/create" class="text-sm text-zinc-300 hover:text-white transition flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Create Event
+          </a>
+          {% if current_user.is_authenticated %}
+            <a href="/dashboard" class="text-sm text-zinc-300 hover:text-white transition">Dashboard</a>
+            {% if current_user.is_admin() %}
+              <a href="/admin" class="text-sm text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                Admin
+              </a>
+            {% endif %}
+            {% if current_user.is_audit() %}
+              <a href="/audit" class="text-sm text-amber-400 hover:text-amber-300 transition flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                Audit
+              </a>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="hidden md:flex items-center gap-4">
+          {% if current_user.is_authenticated %}
+            <span class="text-xs text-zinc-400">{{ current_user.name or current_user.email }}</span>
+            <a href="/logout" class="text-xs text-zinc-400 hover:text-white">Sign out</a>
+          {% else %}
+            <a href="/login" class="text-sm text-zinc-300 hover:text-white flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+              Sign In
+            </a>
+            <a href="/register" class="text-sm text-black bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+              Sign Up
+            </a>
+          {% endif %}
+        </div>
+        <button class="md:hidden text-zinc-300" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden border-t border-zinc-800 px-4 py-4 space-y-3">
+      <a href="/markets" class="block text-sm text-zinc-300">Markets</a>
+      <a href="/create" class="block text-sm text-zinc-300">Create Event</a>
+      {% if current_user.is_authenticated %}
+        <a href="/dashboard" class="block text-sm text-zinc-300">Dashboard</a>
+        {% if current_user.is_admin() %}<a href="/admin" class="block text-sm text-emerald-400">Admin</a>{% endif %}
+        {% if current_user.is_audit() %}<a href="/audit" class="block text-sm text-amber-400">Audit</a>{% endif %}
+        <a href="/logout" class="block text-sm text-zinc-400">Sign out</a>
+      {% else %}
+        <a href="/login" class="block text-sm text-zinc-300">Sign In</a>
+        <a href="/register" class="block text-sm text-emerald-400">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mx-auto max-w-7xl px-4 pt-4">
+        {% for category, message in messages %}
+          <div class="rounded-xl px-4 py-3 text-sm mb-2 {% if category == 'error' %}bg-red-950 border border-red-800 text-red-400{% else %}bg-emerald-950 border border-emerald-800 text-emerald-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-zinc-800 py-8 text-center text-sm text-zinc-500">
+    <p>SaskPolly - Saskatchewan's Prediction Market</p>
+    <p class="mt-1">Built for darts, leagues, and local events</p>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,15 @@
+i want to make a polly market that uses crypto
+meta mask wallets or phantom wallets for people to bet on saskatchewan based
+
+polly market vercel
+github
+stripe
+
+admin login
+audit login
+user login
+event setup
+
+
+
+darts, leaques, events people should be able to make a event and gabmle on it and the market can self regulate and we can take the Vig
