@@ -8,7 +8,7 @@ import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
 
 export default function MarketDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const router = useRouter();
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -25,8 +25,8 @@ export default function MarketDetailPage() {
   const [commentLoading, setCommentLoading] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    fetch(`/api/markets/${id}`)
+    if (!slug) return;
+    fetch(`/api/markets/${slug}`)
       .then((r) => r.json())
       .then((data) => {
         setMarket(data);
@@ -42,11 +42,11 @@ export default function MarketDetailPage() {
       })
       .catch(() => {});
 
-    fetch(`/api/markets/${id}/comments`)
+    fetch(`/api/markets/${slug}/comments`)
       .then((r) => r.json())
       .then((data) => setComments(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [id]);
+  }, [slug]);
 
   useEffect(() => {
     if (session?.user) {
@@ -68,10 +68,10 @@ export default function MarketDetailPage() {
       const res = await fetch("/api/bets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marketId: id, amount: val, outcome }),
+        body: JSON.stringify({ marketId: slug, amount: val, outcome }),
       });
       if (res.ok) {
-        const updated = await fetch(`/api/markets/${id}`).then((r) => r.json());
+        const updated = await fetch(`/api/markets/${slug}`).then((r) => r.json());
         setMarket(updated);
         setAmount("");
         setOutcome(null);
@@ -86,27 +86,27 @@ export default function MarketDetailPage() {
   };
 
   const resolveMarket = async (resolution: boolean) => {
-    const res = await fetch(`/api/markets/${id}/resolve`, {
+    const res = await fetch(`/api/markets/${slug}/resolve`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ outcome: resolution }),
     });
-    if (res.ok) { const updated = await fetch(`/api/markets/${id}`).then((r) => r.json()); setMarket(updated); }
+    if (res.ok) { const updated = await fetch(`/api/markets/${slug}`).then((r) => r.json()); setMarket(updated); }
   };
 
   const saveEdit = async () => {
     setLoading(true);
-    const res = await fetch(`/api/markets/${id}`, {
+    const res = await fetch(`/api/markets/${slug}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editForm),
     });
-    if (res.ok) { const updated = await fetch(`/api/markets/${id}`).then((r) => r.json()); setMarket(updated); setIsEditing(false); }
+    if (res.ok) { const updated = await fetch(`/api/markets/${slug}`).then((r) => r.json()); setMarket(updated); setIsEditing(false); }
     else { const err = await res.json(); alert(err.error || "Failed to update"); }
     setLoading(false);
   };
 
   const deleteMarket = async () => {
     setLoading(true);
-    const res = await fetch(`/api/markets/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/markets/${slug}`, { method: "DELETE" });
     if (res.ok) router.push("/markets");
     else { const err = await res.json(); alert(err.error || "Failed to delete"); }
     setLoading(false);
@@ -324,7 +324,7 @@ export default function MarketDetailPage() {
                         if (!commentText.trim()) return;
                         setCommentLoading(true);
                         try {
-                          const res = await fetch(`/api/markets/${id}/comments`, {
+                          const res = await fetch(`/api/markets/${slug}/comments`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ content: commentText.trim() }),
@@ -371,7 +371,7 @@ export default function MarketDetailPage() {
                             <button
                               onClick={async () => {
                                 if (!confirm("Delete this comment?")) return;
-                                const res = await fetch(`/api/markets/${id}/comments/${comment.id}`, { method: "DELETE" });
+                                const res = await fetch(`/api/markets/${slug}/comments/${comment.id}`, { method: "DELETE" });
                                 if (res.ok) {
                                   setComments((prev) => prev.filter((c) => c.id !== comment.id));
                                 } else {

@@ -266,7 +266,7 @@ export default function Home() {
                 return (
                   <Link
                     key={market.id}
-                    href={`/markets/${market.id}`}
+                    href={`/markets/${market.slug || market.id}`}
                     className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-5 hover:border-zinc-600 transition"
                   >
                     <div className="flex items-center justify-between mb-3">

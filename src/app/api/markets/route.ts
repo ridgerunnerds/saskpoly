@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { cacheGet, cacheSet, cacheDel } from "@/lib/redis";
+import { generateUniqueSlug } from "@/lib/slug";
 
 const CACHE_KEY = "markets:all";
 const CACHE_TTL = 30; // 30 seconds
@@ -59,8 +60,14 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { title, description, category, closesAt, vigPercent } = body;
 
+  const slug = await generateUniqueSlug(title, async (s) => {
+    const existing = await prisma.market.findUnique({ where: { slug: s } });
+    return !!existing;
+  });
+
   const market = await prisma.market.create({
     data: {
+      slug,
       title,
       description,
       category,

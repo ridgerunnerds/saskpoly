@@ -233,7 +233,7 @@ export default function AdminPage() {
                     <MessageSquare className="w-4 h-4 text-emerald-400" />
                     <span className="text-white font-medium">{c.user?.name || c.user?.email || "Anonymous"}</span>
                     <span className="text-xs text-zinc-500">on</span>
-                    <a href={`/markets/${c.market?.id}`} className="text-sm text-emerald-400 hover:underline">
+                    <a href={`/markets/${c.market?.slug || c.market?.id}`} className="text-sm text-emerald-400 hover:underline">
                       {c.market?.title || "Unknown market"}
                     </a>
                   </div>

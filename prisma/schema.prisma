@@ -88,6 +88,7 @@ model VerificationToken {
 
 model Market {
   id          String        @id @default(cuid())
+  slug        String?       @unique
   title       String
   description String
   category    String

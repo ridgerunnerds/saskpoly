@@ -3,12 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { ratelimit, cacheDel } from "@/lib/redis";
+import { findMarketByIdOrSlug } from "@/lib/market-lookup";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
+  const market = await findMarketByIdOrSlug(id);
+  if (!market) return NextResponse.json({ error: "Market not found" }, { status: 404 });
+
   const comments = await prisma.comment.findMany({
-    where: { marketId: id },
+    where: { marketId: market.id },
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { id: true, name: true, email: true } },
@@ -42,7 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Comment must be 2000 characters or less" }, { status: 400 });
   }
 
-  const market = await prisma.market.findUnique({ where: { id } });
+  const market = await findMarketByIdOrSlug(id);
   if (!market) {
     return NextResponse.json({ error: "Market not found" }, { status: 404 });
   }
@@ -53,7 +57,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: {
       content: content.trim(),
       userId,
-      marketId: id,
+      marketId: market.id,
     },
     include: {
       user: { select: { id: true, name: true, email: true } },
@@ -61,6 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
 
   await cacheDel(`market:${id}`);
+  await cacheDel(`market:${market.id}`);
 
   return NextResponse.json(comment, { status: 201 });
 }

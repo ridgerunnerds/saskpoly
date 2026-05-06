@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { cacheGet, cacheSet, cacheDel } from "@/lib/redis";
+import { cacheGet, cacheSet } from "@/lib/redis";
+import { findMarketByIdOrSlug, clearMarketCache } from "@/lib/market-lookup";
 
 const CACHE_TTL = 30;
 
@@ -13,13 +14,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const cached = await cacheGet<unknown>(cacheKey);
   if (cached) return NextResponse.json(cached);
 
-  const market = await prisma.market.findUnique({
-    where: { id },
-    include: {
-      bets: { include: { user: { select: { name: true, email: true } } } },
-      creator: { select: { name: true, email: true } },
-      resolutions: { include: { resolver: { select: { name: true } } } },
-    },
+  const market = await findMarketByIdOrSlug(id, {
+    bets: { include: { user: { select: { name: true, email: true } } } },
+    creator: { select: { name: true, email: true } },
+    resolutions: { include: { resolver: { select: { name: true } } } },
   });
 
   if (!market) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -37,13 +35,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const body = await req.json();
   const { title, description, category, closesAt, vigPercent } = body;
 
+  const existing = await findMarketByIdOrSlug(id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const market = await prisma.market.update({
-    where: { id },
+    where: { id: existing.id },
     data: { title, description, category, closesAt: closesAt ? new Date(closesAt) : null, vigPercent: vigPercent ?? 2.5 },
   });
 
-  await cacheDel(`market:${id}`);
-  await cacheDel("markets:*");
+  await clearMarketCache(id, existing.id);
   return NextResponse.json(market);
 }
 
@@ -53,9 +53,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!user || user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  await prisma.market.delete({ where: { id } });
+  const existing = await findMarketByIdOrSlug(id);
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await cacheDel(`market:${id}`);
-  await cacheDel("markets:*");
+  await prisma.market.delete({ where: { id: existing.id } });
+
+  await clearMarketCache(id, existing.id);
   return NextResponse.json({ success: true });
 }

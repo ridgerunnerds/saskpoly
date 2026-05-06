@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { cacheDel } from "@/lib/redis";
+import { clearMarketCache } from "@/lib/market-lookup";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -16,8 +16,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const body = await req.json();
   const { outcome, evidenceUrl } = body;
 
+  const existing = await prisma.market.findFirst({
+    where: { OR: [{ id }, { slug: id }] },
+  });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const marketId = existing.id;
+
   const market = await prisma.market.update({
-    where: { id },
+    where: { id: marketId },
     data: {
       status: "RESOLVED",
       resolution: outcome,
@@ -27,7 +34,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   await prisma.resolution.create({
     data: {
-      marketId: id,
+      marketId,
       resolverId: user.id,
       outcome,
       evidenceUrl,
@@ -37,11 +44,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Calculate payouts using parimutuel formula
   // Winners split the entire pool (yesPool + noPool) proportional to their shares
   const winningBets = await prisma.bet.findMany({
-    where: { marketId: id, outcome },
+    where: { marketId, outcome },
   });
 
   const losingBets = await prisma.bet.findMany({
-    where: { marketId: id, outcome: { not: outcome } },
+    where: { marketId, outcome: { not: outcome } },
   });
 
   const totalWinningShares = winningBets.reduce((sum, b) => sum + (b.shares || 0), 0);
@@ -84,8 +91,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
 
-  await cacheDel(`market:${id}`);
-  await cacheDel("markets:*");
+  await clearMarketCache(id, marketId);
 
   return NextResponse.json(market);
 }

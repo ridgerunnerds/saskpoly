@@ -56,7 +56,7 @@ export default function AuditPage() {
               <div className="flex gap-3">
                 <button
                   onClick={async () => {
-                    await fetch(`/api/markets/${market.id}/resolve`, {
+                    await fetch(`/api/markets/${market.slug || market.id}/resolve`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ outcome: true }),
@@ -71,7 +71,7 @@ export default function AuditPage() {
                 </button>
                 <button
                   onClick={async () => {
-                    await fetch(`/api/markets/${market.id}/resolve`, {
+                    await fetch(`/api/markets/${market.slug || market.id}/resolve`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ outcome: false }),

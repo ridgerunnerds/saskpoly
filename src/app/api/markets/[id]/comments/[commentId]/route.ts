@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { cacheDel } from "@/lib/redis";
+import { findMarketByIdOrSlug } from "@/lib/market-lookup";
 
 export async function DELETE(
   _req: Request,
@@ -21,7 +22,9 @@ export async function DELETE(
     where: { id: commentId },
   });
 
+  const market = await findMarketByIdOrSlug(id);
   await cacheDel(`market:${id}`);
+  if (market) await cacheDel(`market:${market.id}`);
 
   return NextResponse.json({ success: true });
 }
