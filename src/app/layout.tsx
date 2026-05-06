@@ -26,11 +26,18 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://saskpoly.xyz",
     siteName: "SaskPoly",
+    images: [{
+      url: "https://saskpoly.xyz/og-image.png",
+      width: 1200,
+      height: 630,
+      alt: "SaskPoly - Saskatchewan Prediction Market",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: "SaskPoly - Saskatchewan Prediction Market",
     description: "Trade on real-world outcomes with transparent odds, secure payments, and audited resolutions.",
+    images: ["https://saskpoly.xyz/og-image.png"],
   },
 };
 

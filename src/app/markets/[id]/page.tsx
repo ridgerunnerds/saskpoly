@@ -45,11 +45,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description: `${market.description.slice(0, 200)}${market.description.length > 200 ? "..." : ""}`,
       type: "website",
       url: `https://saskpoly.xyz/markets/${id}`,
+      siteName: "SaskPoly",
+      images: [{
+        url: "https://saskpoly.xyz/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: market.title,
+      }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: market.title,
       description: market.description.slice(0, 200),
+      images: ["https://saskpoly.xyz/og-image.png"],
     },
   };
 }
