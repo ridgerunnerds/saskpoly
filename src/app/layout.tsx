@@ -20,6 +20,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SaskPoly - Saskatchewan Prediction Market",
   description: "Trade on real-world outcomes with transparent odds, secure payments, and audited resolutions.",
+  openGraph: {
+    title: "SaskPoly - Saskatchewan Prediction Market",
+    description: "Trade on real-world outcomes with transparent odds, secure payments, and audited resolutions.",
+    type: "website",
+    url: "https://saskpoly.xyz",
+    siteName: "SaskPoly",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SaskPoly - Saskatchewan Prediction Market",
+    description: "Trade on real-world outcomes with transparent odds, secure payments, and audited resolutions.",
+  },
 };
 
 export default function RootLayout({
