@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Users, DollarSign, Activity, Mail, MessageSquare, TrendingUp, Trash2, X } from "lucide-react";
+import { Shield, Users, DollarSign, Activity, Mail, MessageSquare, TrendingUp, Trash2, X, ArrowUpRight, CheckCircle } from "lucide-react";
 
-type Tab = "markets" | "contacts" | "comments" | "beta";
+type Tab = "markets" | "contacts" | "comments" | "beta" | "withdrawals";
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [betaSignups, setBetaSignups] = useState<any[]>([]);
   const [allComments, setAllComments] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [tab, setTab] = useState<Tab>("markets");
 
   useEffect(() => {
@@ -44,6 +45,10 @@ export default function AdminPage() {
     fetch("/api/admin/comments")
       .then((r) => r.json())
       .then((data) => setAllComments(Array.isArray(data) ? data : []));
+
+    fetch("/api/admin/withdrawals")
+      .then((r) => r.json())
+      .then((data) => setWithdrawals(Array.isArray(data) ? data : []));
   }, [status, user, router]);
 
   if (status === "loading") {
@@ -55,6 +60,7 @@ export default function AdminPage() {
   const totalVolume = markets.reduce((a, m) => a + m.totalVolume, 0);
   const openMarkets = markets.filter((m) => m.status === "OPEN").length;
   const resolvedMarkets = markets.filter((m) => m.status === "RESOLVED").length;
+  const pendingWithdrawals = withdrawals.filter((w) => w.status === "PENDING").length;
 
   const tabBtn = (key: Tab, label: string, icon: React.ReactNode) => (
     <button
@@ -71,6 +77,20 @@ export default function AdminPage() {
     </button>
   );
 
+  const updateWithdrawal = async (id: string, status: string, txHash?: string) => {
+    const res = await fetch(`/api/admin/withdrawals/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, txHash }),
+    });
+    if (res.ok) {
+      const updated = await fetch("/api/admin/withdrawals").then((r) => r.json());
+      setWithdrawals(Array.isArray(updated) ? updated : []);
+    } else {
+      alert("Failed to update withdrawal");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
@@ -78,7 +98,7 @@ export default function AdminPage() {
         Admin Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="flex items-center gap-3">
             <Activity className="w-5 h-5 text-emerald-400" />
@@ -107,13 +127,21 @@ export default function AdminPage() {
           </div>
           <div className="mt-2 text-2xl font-bold text-white">{users.length}</div>
         </div>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="flex items-center gap-3">
+            <ArrowUpRight className="w-5 h-5 text-red-400" />
+            <span className="text-sm text-zinc-400">Pending Withdrawals</span>
+          </div>
+          <div className="mt-2 text-2xl font-bold text-white">{pendingWithdrawals}</div>
+        </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {tabBtn("markets", "Markets", <Activity className="w-4 h-4" />)}
         {tabBtn("contacts", `Contact Forms (${contacts.length})`, <Mail className="w-4 h-4" />)}
         {tabBtn("comments", `Comments (${allComments.length})`, <MessageSquare className="w-4 h-4" />)}
         {tabBtn("beta", `Beta Signups (${betaSignups.length})`, <TrendingUp className="w-4 h-4" />)}
+        {tabBtn("withdrawals", `Withdrawals (${pendingWithdrawals})`, <ArrowUpRight className="w-4 h-4" />)}
       </div>
 
       {tab === "markets" && (
@@ -290,6 +318,93 @@ export default function AdminPage() {
                     <td className="px-4 py-3 text-zinc-300">{b.province}</td>
                     <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">{b.message || "—"}</td>
                     <td className="px-4 py-3 text-zinc-500 text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === "withdrawals" && (
+        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-zinc-900 text-zinc-400">
+              <tr>
+                <th className="px-4 py-3">User</th>
+                <th className="px-4 py-3">Amount</th>
+                <th className="px-4 py-3">To Address</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {withdrawals.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-zinc-500 text-sm">
+                    No withdrawals yet.
+                  </td>
+                </tr>
+              ) : (
+                withdrawals.map((w) => (
+                  <tr key={w.id} className="hover:bg-zinc-900/50">
+                    <td className="px-4 py-3 text-white font-medium">
+                      {w.user?.name || w.user?.email || w.user?.walletAddress?.slice(0, 10) + "..." || "Unknown"}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-300">${w.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-zinc-400 font-mono text-xs">{w.toAddress.slice(0, 12)}...{w.toAddress.slice(-6)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        w.status === "PENDING" ? "bg-amber-950 text-amber-400" :
+                        w.status === "PROCESSING" ? "bg-cyan-950 text-cyan-400" :
+                        w.status === "COMPLETED" ? "bg-emerald-950 text-emerald-400" :
+                        "bg-red-950 text-red-400"
+                      }`}>
+                        {w.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-zinc-500 text-xs">{new Date(w.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {w.status === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() => {
+                                const txHash = prompt("Enter transaction hash (optional):");
+                                updateWithdrawal(w.id, "COMPLETED", txHash || undefined);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-emerald-950 text-zinc-500 hover:text-emerald-400 transition"
+                              title="Mark as completed"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm("Reject this withdrawal? The amount will be refunded to the user's balance.")) {
+                                  updateWithdrawal(w.id, "FAILED");
+                                }
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-red-950 text-zinc-500 hover:text-red-400 transition"
+                              title="Reject & refund"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {w.txHash && (
+                          <a
+                            href={`https://polygonscan.com/tx/${w.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 transition"
+                            title="View on Polygonscan"
+                          >
+                            <ArrowUpRight className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
