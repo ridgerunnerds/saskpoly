@@ -171,7 +171,7 @@ export default function MarketDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div><label className="block text-sm text-zinc-400 mb-1">Category</label>
                 <select value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none">
-                  <option>Sports</option><option>Politics</option><option>Weather</option><option>Entertainment</option><option>Other</option>
+                  <option>Politics</option><option>Weather</option><option>Entertainment</option><option>Other</option>
                 </select>
               </div>
               <div><label className="block text-sm text-zinc-400 mb-1">Closes At</label><input type="datetime-local" value={editForm.closesAt} onChange={(e) => setEditForm({ ...editForm, closesAt: e.target.value })} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none" /></div>

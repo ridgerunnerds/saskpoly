@@ -14,7 +14,7 @@ export default function CreatePage() {
   const { data: session } = useSession();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Sports");
+  const [category, setCategory] = useState("Politics");
   const [closesAt, setClosesAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -153,7 +153,6 @@ export default function CreatePage() {
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white focus:border-emerald-500 focus:outline-none"
           >
-            <option>Sports</option>
             <option>Politics</option>
             <option>Weather</option>
             <option>Entertainment</option>

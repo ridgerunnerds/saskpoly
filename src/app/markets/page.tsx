@@ -15,7 +15,12 @@ export default function MarketsPage() {
       .catch(() => setMarkets([]));
   }, []);
 
-  const filtered = markets.filter((m) => (filter === "ALL" ? true : m.status === filter));
+  const filtered = markets
+    .filter((m) => (filter === "ALL" ? true : m.status === filter))
+    .filter((m) => {
+      const cat = m.category?.toLowerCase() || "";
+      return !["sports", "football", "hockey", "darts", "basketball", "baseball", "soccer"].some((s) => cat.includes(s));
+    });
 
   const statusIcon = (status: string) => {
     if (status === "OPEN") return <Clock className="w-4 h-4 text-emerald-400" />;

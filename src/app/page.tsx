@@ -249,7 +249,13 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {markets.slice(0, 6).map((market) => {
+              {markets
+                .filter((m) => {
+                  const cat = m.category?.toLowerCase() || "";
+                  return !["sports", "football", "hockey", "darts", "basketball", "baseball", "soccer"].some((s) => cat.includes(s));
+                })
+                .slice(0, 6)
+                .map((market) => {
                 const totalPool = market.yesPool + market.noPool;
                 const yesProb = totalPool > 0 ? (market.yesPool / totalPool) * 100 : 50;
                 const statusIcon = (status: string) => {

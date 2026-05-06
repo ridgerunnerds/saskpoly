@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Users, DollarSign, Activity, Mail, MessageSquare, TrendingUp } from "lucide-react";
+import { Shield, Users, DollarSign, Activity, Mail, MessageSquare, TrendingUp, Trash2 } from "lucide-react";
 
 type Tab = "markets" | "contacts" | "beta";
 
@@ -111,6 +111,26 @@ export default function AdminPage() {
       </div>
 
       {tab === "markets" && (
+        <>
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={async () => {
+              if (!confirm("Delete all sports/football/hockey/darts markets? This cannot be undone.")) return;
+              const res = await fetch("/api/admin/purge-sports", { method: "POST" });
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Deleted ${data.deleted} sports market(s).`);
+                window.location.reload();
+              } else {
+                alert(data.error || "Failed to purge markets");
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-950 transition"
+          >
+            <Trash2 className="w-4 h-4" />
+            Purge Sports Markets
+          </button>
+        </div>
         <div className="rounded-2xl border border-zinc-800 overflow-hidden">
           <table className="w-full text-sm text-left">
             <thead className="bg-zinc-900 text-zinc-400">
@@ -147,6 +167,7 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {tab === "contacts" && (
