@@ -63,7 +63,7 @@ export default function CreatePage() {
   if (!session?.user) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center text-zinc-500">
-        Sign in to create markets.
+        Connect your wallet to create markets.
       </div>
     );
   }

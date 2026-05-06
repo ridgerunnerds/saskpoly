@@ -82,8 +82,8 @@ export default function DepositPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <Wallet className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-white">Sign In Required</h1>
-        <p className="mt-2 text-zinc-400">Please sign in to deposit funds.</p>
+        <h1 className="text-xl font-bold text-white">Connect Wallet</h1>
+        <p className="mt-2 text-zinc-400">Connect your wallet to deposit funds.</p>
       </div>
     );
   }

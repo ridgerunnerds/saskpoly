@@ -8,6 +8,40 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
+      id: "wallet-login",
+      name: "Wallet Login",
+      credentials: {
+        walletAddress: { label: "Wallet Address", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.walletAddress) return null;
+
+        const addr = credentials.walletAddress.toLowerCase();
+
+        let user = await prisma.user.findUnique({
+          where: { walletAddress: addr },
+        });
+
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              walletAddress: addr,
+              name: addr.slice(0, 6) + "..." + addr.slice(-4),
+            },
+          });
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          walletAddress: user.walletAddress,
+          profileComplete: user.profileComplete,
+        };
+      },
+    }),
+    CredentialsProvider({
       id: "user-login",
       name: "User Login",
       credentials: {
@@ -31,6 +65,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          walletAddress: user.walletAddress,
           profileComplete: user.profileComplete,
         };
       },
@@ -77,6 +112,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          walletAddress: user.walletAddress,
         };
       },
     }),
@@ -87,6 +123,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.walletAddress = (user as any).walletAddress;
         token.profileComplete = (user as any).profileComplete;
       }
       return token;
@@ -95,6 +132,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).walletAddress = token.walletAddress;
         (session.user as any).profileComplete = token.profileComplete;
       }
       return session;

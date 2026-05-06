@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { User, Shield, AlertCircle } from "lucide-react";
+import { User, Shield, AlertCircle, Wallet } from "lucide-react";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -24,9 +24,9 @@ export default function ProfilePage() {
   if (!session?.user) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <User className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-white">Sign In Required</h1>
-        <p className="mt-2 text-zinc-400">Please sign in to view your profile.</p>
+        <Wallet className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
+        <h1 className="text-xl font-bold text-white">Connect Wallet</h1>
+        <p className="mt-2 text-zinc-400">Connect your wallet to view your profile.</p>
       </div>
     );
   }
@@ -54,7 +54,9 @@ export default function ProfilePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Your Profile</h1>
-          <p className="text-sm text-zinc-400">Tax compliance information</p>
+          <p className="text-sm text-zinc-400">
+            {profile?.walletAddress ? "Wallet account" : "Tax compliance information"}
+          </p>
         </div>
       </div>
 
@@ -72,6 +74,7 @@ export default function ProfilePage() {
 
       <div className="rounded-2xl border border-zinc-800 p-6 mb-6">
         <h2 className="text-lg font-semibold text-white mb-4">Account</h2>
+        {profile?.walletAddress && field("Wallet", profile.walletAddress)}
         {field("Email", profile?.email)}
         {field("Display Name", profile?.name)}
         {field("Balance", profile?.balance !== undefined ? `$${profile.balance.toFixed(2)}` : null)}
@@ -82,7 +85,6 @@ export default function ProfilePage() {
         {field("Full Legal Name", profile?.fullLegalName)}
         {field("Date of Birth", profile?.dateOfBirth)}
         {field("Phone", profile?.phone)}
-
       </div>
 
       <div className="rounded-2xl border border-zinc-800 p-6 mb-6">
