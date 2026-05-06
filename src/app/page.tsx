@@ -154,7 +154,15 @@ export default function Home() {
     },
     {
       q: "What if I have a problem?",
-      a: "Email support@saskpoly.xyz. We aim to respond within 24 hours during business days.",
+      a: (
+        <>
+          Fill out{" "}
+          <Link href="/contact" className="text-emerald-400 hover:underline">
+            the contact form
+          </Link>{" "}
+          and we&apos;ll get back to you within 24 hours during business days.
+        </>
+      ),
     },
   ];
 
