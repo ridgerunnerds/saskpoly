@@ -14,15 +14,15 @@ DECLARE
     counter INT := 1;
 BEGIN
     FOR rec IN
-        SELECT id, slug FROM (
-            SELECT id, slug,
-                   ROW_NUMBER() OVER (PARTITION BY slug ORDER BY createdAt) as rn
+        SELECT "id", "slug" FROM (
+            SELECT "id", "slug",
+                   ROW_NUMBER() OVER (PARTITION BY "slug" ORDER BY "createdAt") AS rn
             FROM "Market"
-            WHERE slug IS NOT NULL
+            WHERE "slug" IS NOT NULL
         ) sub WHERE rn > 1
     LOOP
-        UPDATE "Market" SET slug = rec.slug || '-' || counter || '-' || SUBSTRING(MD5(RANDOM()::TEXT), 1, 4)
-        WHERE id = rec.id;
+        UPDATE "Market" SET "slug" = rec."slug" || '-' || counter || '-' || SUBSTRING(MD5(RANDOM()::TEXT), 1, 4)
+        WHERE "id" = rec."id";
         counter := counter + 1;
     END LOOP;
 END $$;

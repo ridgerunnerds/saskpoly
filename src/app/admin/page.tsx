@@ -1,417 +1,814 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Shield, Users, DollarSign, Activity, Mail, MessageSquare, TrendingUp, Trash2, X, ArrowUpRight, CheckCircle } from "lucide-react";
-
-type Tab = "markets" | "contacts" | "comments" | "beta" | "withdrawals";
+import {
+  Shield,
+  UserPlus,
+  Trophy,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  Gamepad2,
+  Mail,
+  Copy,
+  Trash2,
+  KeyRound,
+  Users,
+  MessageSquare,
+  Search,
+} from "lucide-react";
 
 export default function AdminPage() {
-  const { data: session, status } = useSession();
+  const supabase = createClient();
   const router = useRouter();
-  const user = session?.user as any;
-  const [markets, setMarkets] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Add friend form
+  const [friendEmail, setFriendEmail] = useState("");
+  const [friendName, setFriendName] = useState("");
+  const [friendPassword, setFriendPassword] = useState("");
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [userMsg, setUserMsg] = useState("");
+
+  // Create prediction form
+  const [predTitle, setPredTitle] = useState("");
+  const [predDesc, setPredDesc] = useState("");
+  const [predCategory, setPredCategory] = useState<"sports" | "stocks">("sports");
+  const [predType, setPredType] = useState("nba_game");
+  const [predDate, setPredDate] = useState("");
+  const [predOptions, setPredOptions] = useState("");
+  const [predPoints, setPredPoints] = useState(10);
+  const [creatingPred, setCreatingPred] = useState(false);
+  const [predMsg, setPredMsg] = useState("");
+
+  // ESPN import
+  const [espnSport, setEspoSport] = useState("nba");
+  const [espnDays, setEspoDays] = useState(3);
+  const [fetchingEspo, setFetchingEspo] = useState(false);
+  const [espnGames, setEspoGames] = useState<any[]>([]);
+
+  // Resolve
+  const [predictions, setPredictions] = useState<any[]>([]);
+  const [resolveId, setResolveId] = useState("");
+  const [resolveOption, setResolveOption] = useState("");
+  const [resolving, setResolving] = useState(false);
+
+  // Invites
+  const [invites, setInvites] = useState<any[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteNote, setInviteNote] = useState("");
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState("");
+  const [copiedCode, setCopiedCode] = useState("");
+
+  // Control panel
   const [users, setUsers] = useState<any[]>([]);
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [betaSignups, setBetaSignups] = useState<any[]>([]);
-  const [allComments, setAllComments] = useState<any[]>([]);
-  const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const [tab, setTab] = useState<Tab>("markets");
+  const [comments, setComments] = useState<any[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [predSearch, setPredSearch] = useState("");
+  const [commentSearch, setCommentSearch] = useState("");
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [deletingPred, setDeletingPred] = useState<string | null>(null);
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "loading") return;
-    if (!user || user.role !== "ADMIN") {
-      router.push("/");
-      return;
-    }
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (data?.role !== "admin") {
+        router.push("/predictions");
+        return;
+      }
+      setProfile(data);
+      setLoading(false);
+      loadPredictions();
+      loadInvites();
+      loadUsers();
+      loadComments();
+    };
+    checkAdmin();
+  }, [router]);
 
-    fetch("/api/markets")
-      .then((r) => r.json())
-      .then((data) => setMarkets(Array.isArray(data) ? data : []));
+  const loadPredictions = async () => {
+    const { data } = await supabase
+      .from("predictions")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setPredictions(data || []);
+  };
 
-    fetch("/api/admin/users")
-      .then((r) => r.json())
-      .then((data) => setUsers(Array.isArray(data) ? data : []));
+  const loadInvites = async () => {
+    const { data } = await supabase
+      .from("invites")
+      .select("*, used_by_profile:profiles!invites_used_by_fkey(display_name)")
+      .order("created_at", { ascending: false });
+    setInvites(data || []);
+  };
 
-    fetch("/api/admin/contacts")
-      .then((r) => r.json())
-      .then((data) => setContacts(Array.isArray(data) ? data : []));
+  const loadUsers = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setUsers(data || []);
+  };
 
-    fetch("/api/admin/beta")
-      .then((r) => r.json())
-      .then((data) => setBetaSignups(Array.isArray(data) ? data : []));
+  const loadComments = async () => {
+    const { data } = await supabase
+      .from("comments")
+      .select("*, profiles(display_name), predictions(title)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    setComments(data || []);
+  };
 
-    fetch("/api/admin/comments")
-      .then((r) => r.json())
-      .then((data) => setAllComments(Array.isArray(data) ? data : []));
-
-    fetch("/api/admin/withdrawals")
-      .then((r) => r.json())
-      .then((data) => setWithdrawals(Array.isArray(data) ? data : []));
-  }, [status, user, router]);
-
-  if (status === "loading") {
-    return <div className="mx-auto max-w-7xl px-4 py-20 text-center text-zinc-500">Loading...</div>;
-  }
-
-  if (!user || user.role !== "ADMIN") return null;
-
-  const totalVolume = markets.reduce((a, m) => a + m.totalVolume, 0);
-  const openMarkets = markets.filter((m) => m.status === "OPEN").length;
-  const resolvedMarkets = markets.filter((m) => m.status === "RESOLVED").length;
-  const pendingWithdrawals = withdrawals.filter((w) => w.status === "PENDING").length;
-
-  const tabBtn = (key: Tab, label: string, icon: React.ReactNode) => (
-    <button
-      key={key}
-      onClick={() => setTab(key)}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${
-        tab === key
-          ? "bg-emerald-500 text-black"
-          : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-
-  const updateWithdrawal = async (id: string, status: string, txHash?: string) => {
-    const res = await fetch(`/api/admin/withdrawals/${id}`, {
-      method: "PUT",
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserMsg("");
+    setCreatingUser(true);
+    const res = await fetch("/api/admin/create-user", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, txHash }),
+      body: JSON.stringify({ email: friendEmail, password: friendPassword, displayName: friendName }),
     });
-    if (res.ok) {
-      const updated = await fetch("/api/admin/withdrawals").then((r) => r.json());
-      setWithdrawals(Array.isArray(updated) ? updated : []);
+    const json = await res.json();
+    setCreatingUser(false);
+    if (json.error) {
+      setUserMsg(json.error);
     } else {
-      alert("Failed to update withdrawal");
+      setUserMsg("Friend added successfully!");
+      setFriendEmail("");
+      setFriendName("");
+      setFriendPassword("");
     }
   };
 
+  const handleCreatePrediction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPredMsg("");
+    setCreatingPred(true);
+    const { error } = await supabase.from("predictions").insert({
+      title: predTitle,
+      description: predDesc,
+      category: predCategory,
+      event_type: predType,
+      event_date: new Date(predDate).toISOString(),
+      options: predOptions.split(",").map((o) => o.trim()),
+      points: predPoints,
+      created_by: profile.id,
+    });
+    setCreatingPred(false);
+    if (error) {
+      setPredMsg(error.message);
+    } else {
+      setPredMsg("Prediction created!");
+      setPredTitle("");
+      setPredDesc("");
+      setPredOptions("");
+      loadPredictions();
+    }
+  };
+
+  const handleFetchESPN = async () => {
+    setFetchingEspo(true);
+    const res = await fetch("/api/admin/fetch-espn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sport: espnSport, days: espnDays }),
+    });
+    const json = await res.json();
+    setFetchingEspo(false);
+    setEspoGames(json.games || []);
+  };
+
+  const handleImportGame = async (game: any) => {
+    const { error } = await supabase.from("predictions").insert({
+      title: `${game.awayTeam} @ ${game.homeTeam}`,
+      description: `${game.name} — ${game.status}`,
+      category: "sports",
+      event_type: espnSport,
+      source_api: "espn",
+      source_id: game.id,
+      event_date: game.date,
+      options: [game.awayTeam, game.homeTeam, "Draw"],
+      points: 10,
+      created_by: profile.id,
+    });
+    if (error) {
+      alert(error.message);
+    } else {
+      loadPredictions();
+    }
+  };
+
+  const handleResolve = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResolving(true);
+    const res = await fetch("/api/admin/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ predictionId: resolveId, resolvedOption: resolveOption }),
+    });
+    const json = await res.json();
+    setResolving(false);
+    if (json.error) {
+      alert(json.error);
+    } else {
+      alert("Resolved! Points awarded.");
+      loadPredictions();
+    }
+  };
+
+  const generateCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const handleCreateInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteMsg("");
+    setGeneratingInvite(true);
+
+    const code = generateCode();
+    const { error } = await supabase.from("invites").insert({
+      code,
+      email: inviteEmail || null,
+      note: inviteNote || null,
+      created_by: profile.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    setGeneratingInvite(false);
+    if (error) {
+      setInviteMsg(error.message);
+    } else {
+      setInviteMsg(`Invite code created: ${code}`);
+      setInviteEmail("");
+      setInviteNote("");
+      loadInvites();
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(text);
+    setTimeout(() => setCopiedCode(""), 2000);
+  };
+
+  const deleteInvite = async (id: string) => {
+    await supabase.from("invites").delete().eq("id", id);
+    loadInvites();
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm("Delete this user and all their picks/comments? This cannot be undone.")) return;
+    setDeletingUser(id);
+    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    setDeletingUser(null);
+    if (res.ok) {
+      loadUsers();
+      loadPredictions();
+      loadComments();
+      loadInvites();
+    } else {
+      const json = await res.json();
+      alert(json.error || "Failed to delete user");
+    }
+  };
+
+  const handleDeletePrediction = async (id: string) => {
+    if (!confirm("Delete this prediction and all its picks/comments? This cannot be undone.")) return;
+    setDeletingPred(id);
+    await supabase.from("predictions").delete().eq("id", id);
+    setDeletingPred(null);
+    loadPredictions();
+    loadComments();
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!confirm("Delete this comment? This cannot be undone.")) return;
+    setDeletingComment(id);
+    const res = await fetch(`/api/admin/comments/${id}`, { method: "DELETE" });
+    setDeletingComment(null);
+    if (res.ok) {
+      loadComments();
+    } else {
+      const json = await res.json();
+      alert(json.error || "Failed to delete comment");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
+    <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
+      <div className="flex items-center gap-3">
         <Shield className="w-6 h-6 text-emerald-400" />
-        Admin Dashboard
-      </h1>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="flex items-center gap-3">
-            <Activity className="w-5 h-5 text-emerald-400" />
-            <span className="text-sm text-zinc-400">Total Markets</span>
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{markets.length}</div>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-cyan-400" />
-            <span className="text-sm text-zinc-400">Total Volume</span>
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">${totalVolume.toLocaleString()}</div>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="flex items-center gap-3">
-            <Activity className="w-5 h-5 text-amber-400" />
-            <span className="text-sm text-zinc-400">Open</span>
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{openMarkets}</div>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="flex items-center gap-3">
-            <Users className="w-5 h-5 text-purple-400" />
-            <span className="text-sm text-zinc-400">Users</span>
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{users.length}</div>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="flex items-center gap-3">
-            <ArrowUpRight className="w-5 h-5 text-red-400" />
-            <span className="text-sm text-zinc-400">Pending Withdrawals</span>
-          </div>
-          <div className="mt-2 text-2xl font-bold text-white">{pendingWithdrawals}</div>
-        </div>
+        <h1 className="text-2xl font-bold">Admin Panel</h1>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {tabBtn("markets", "Markets", <Activity className="w-4 h-4" />)}
-        {tabBtn("contacts", `Contact Forms (${contacts.length})`, <Mail className="w-4 h-4" />)}
-        {tabBtn("comments", `Comments (${allComments.length})`, <MessageSquare className="w-4 h-4" />)}
-        {tabBtn("beta", `Beta Signups (${betaSignups.length})`, <TrendingUp className="w-4 h-4" />)}
-        {tabBtn("withdrawals", `Withdrawals (${pendingWithdrawals})`, <ArrowUpRight className="w-4 h-4" />)}
-      </div>
+      {/* Invites */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-emerald-400" />
+          Send Invites
+        </h2>
 
-      {tab === "markets" && (
-        <>
-        <div className="flex justify-end mb-4">
+        <form onSubmit={handleCreateInvite} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <input
+            type="email"
+            placeholder="Friend's email (optional)"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          />
+          <input
+            type="text"
+            placeholder="Note (optional)"
+            value={inviteNote}
+            onChange={(e) => setInviteNote(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          />
           <button
-            onClick={async () => {
-              if (!confirm("Delete all sports/football/hockey/darts markets? This cannot be undone.")) return;
-              const res = await fetch("/api/admin/purge-sports", { method: "POST" });
-              const data = await res.json();
-              if (res.ok) {
-                alert(`Deleted ${data.deleted} sports market(s).`);
-                window.location.reload();
-              } else {
-                alert(data.error || "Failed to purge markets");
-              }
-            }}
-            className="inline-flex items-center gap-2 rounded-xl border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-950 transition"
+            type="submit"
+            disabled={generatingInvite}
+            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-4 h-4" />
-            Purge Sports Markets
+            <Mail className="w-4 h-4" />
+            {generatingInvite ? "Creating..." : "Generate Invite Code"}
+          </button>
+        </form>
+
+        {inviteMsg && (
+          <div className="mb-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 flex items-center justify-between">
+            <p className="text-emerald-400 font-mono text-lg font-bold">{inviteMsg.replace("Invite code created: ", "")}</p>
+            <button
+              onClick={() => copyToClipboard(inviteMsg.replace("Invite code created: ", ""))}
+              className="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg hover:bg-emerald-500/30 transition flex items-center gap-1"
+            >
+              <Copy className="w-3 h-3" />
+              {copiedCode === inviteMsg.replace("Invite code created: ", "") ? "Copied!" : "Copy"}
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {invites.map((inv) => (
+            <div key={inv.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-white">{inv.code}</span>
+                  {inv.used_by ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">Used</span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Active</span>
+                  )}
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  {inv.email && <span className="mr-2">{inv.email}</span>}
+                  {inv.note && <span className="mr-2">{inv.note}</span>}
+                  {inv.used_by_profile?.display_name && (
+                    <span>Used by {inv.used_by_profile.display_name}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {!inv.used_by && (
+                  <button
+                    onClick={() => copyToClipboard(inv.code)}
+                    className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" />
+                    {copiedCode === inv.code ? "Copied!" : "Copy"}
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteInvite(inv.id)}
+                  className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {invites.length === 0 && (
+            <p className="text-sm text-zinc-600 text-center py-4">No invites yet. Generate one above!</p>
+          )}
+        </div>
+      </section>
+
+      {/* Add Friend (direct) */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <UserPlus className="w-5 h-5 text-emerald-400" />
+          Add a Friend (Direct)
+        </h2>
+        <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="email"
+            required
+            placeholder="Email"
+            value={friendEmail}
+            onChange={(e) => setFriendEmail(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          />
+          <input
+            type="text"
+            placeholder="Display Name"
+            value={friendName}
+            onChange={(e) => setFriendName(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          />
+          <input
+            type="text"
+            required
+            placeholder="Temporary Password"
+            value={friendPassword}
+            onChange={(e) => setFriendPassword(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none md:col-span-2"
+          />
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={creatingUser}
+              className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition"
+            >
+              {creatingUser ? "Adding..." : "Add Friend"}
+            </button>
+            {userMsg && (
+              <p className={`mt-2 text-sm flex items-center gap-1 ${userMsg.includes("success") ? "text-emerald-400" : "text-red-400"}`}>
+                {userMsg.includes("success") ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                {userMsg}
+              </p>
+            )}
+          </div>
+        </form>
+      </section>
+
+      {/* Create Prediction */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-emerald-400" />
+          Create Prediction
+        </h2>
+        <form onSubmit={handleCreatePrediction} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              required
+              placeholder="Title"
+              value={predTitle}
+              onChange={(e) => setPredTitle(e.target.value)}
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            />
+            <select
+              value={predCategory}
+              onChange={(e) => setPredCategory(e.target.value as any)}
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="sports">Sports</option>
+              <option value="stocks">Stocks</option>
+            </select>
+          </div>
+          <textarea
+            placeholder="Description"
+            value={predDesc}
+            onChange={(e) => setPredDesc(e.target.value)}
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            rows={3}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              type="text"
+              placeholder="Event type (e.g. nba_game)"
+              value={predType}
+              onChange={(e) => setPredType(e.target.value)}
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            />
+            <input
+              type="datetime-local"
+              required
+              value={predDate}
+              onChange={(e) => setPredDate(e.target.value)}
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            />
+            <input
+              type="number"
+              min={1}
+              value={predPoints}
+              onChange={(e) => setPredPoints(Number(e.target.value))}
+              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <input
+            type="text"
+            required
+            placeholder="Options (comma separated, e.g. Lakers, Celtics, Draw)"
+            value={predOptions}
+            onChange={(e) => setPredOptions(e.target.value)}
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={creatingPred}
+            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition"
+          >
+            {creatingPred ? "Creating..." : "Create Prediction"}
+          </button>
+          {predMsg && (
+            <p className={`text-sm flex items-center gap-1 ${predMsg.includes("!") ? "text-emerald-400" : "text-red-400"}`}>
+              {predMsg.includes("!") ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              {predMsg}
+            </p>
+          )}
+        </form>
+      </section>
+
+      {/* ESPN Import */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Gamepad2 className="w-5 h-5 text-emerald-400" />
+          Import from ESPN
+        </h2>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <select
+            value={espnSport}
+            onChange={(e) => setEspoSport(e.target.value)}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          >
+            <option value="nba">NBA</option>
+            <option value="nfl">NFL</option>
+            <option value="nhl">NHL</option>
+            <option value="mlb">MLB</option>
+            <option value="mls">MLS</option>
+            <option value="epl">EPL</option>
+          </select>
+          <input
+            type="number"
+            min={1}
+            max={7}
+            value={espnDays}
+            onChange={(e) => setEspoDays(Number(e.target.value))}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none w-24"
+          />
+          <button
+            onClick={handleFetchESPN}
+            disabled={fetchingEspo}
+            className="rounded-xl bg-zinc-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 transition"
+          >
+            {fetchingEspo ? "Fetching..." : "Fetch Games"}
           </button>
         </div>
-        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-zinc-900 text-zinc-400">
-              <tr>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Volume</th>
-                <th className="px-4 py-3">Bets</th>
-                <th className="px-4 py-3">Vig</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {markets.map((m) => (
-                <tr key={m.id} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 text-white font-medium">{m.title}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        m.status === "OPEN"
-                          ? "bg-emerald-950 text-emerald-400"
-                          : m.status === "RESOLVED"
-                          ? "bg-cyan-950 text-cyan-400"
-                          : "bg-zinc-800 text-zinc-400"
-                      }`}
-                    >
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-300">${m.totalVolume.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-zinc-300">{m.bets?.length || 0}</td>
-                  <td className="px-4 py-3 text-zinc-300">{m.vigPercent}%</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={async () => {
-                        if (!confirm(`Delete "${m.title}"? This cannot be undone.`)) return;
-                        const res = await fetch(`/api/markets/${m.id}`, { method: "DELETE" });
-                        if (res.ok) {
-                          setMarkets((prev) => prev.filter((x) => x.id !== m.id));
-                        } else {
-                          alert("Failed to delete market");
-                        }
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-red-950 text-zinc-500 hover:text-red-400 transition"
-                      title="Delete market"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {espnGames.map((game) => (
+            <div key={game.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">{game.awayTeam} @ {game.homeTeam}</p>
+                <p className="text-xs text-zinc-500">{new Date(game.date).toLocaleString()} — {game.status}</p>
+              </div>
+              <button
+                onClick={() => handleImportGame(game)}
+                className="text-xs rounded-lg bg-emerald-500/20 text-emerald-400 px-3 py-1.5 hover:bg-emerald-500/30 transition"
+              >
+                Import
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Resolve Predictions */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-emerald-400" />
+          Resolve Predictions
+        </h2>
+        <form onSubmit={handleResolve} className="space-y-4">
+          <select
+            value={resolveId}
+            onChange={(e) => {
+              setResolveId(e.target.value);
+              setResolveOption("");
+            }}
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+          >
+            <option value="">Select a prediction to resolve</option>
+            {predictions
+              .filter((p) => p.status !== "resolved" && p.status !== "cancelled")
+              .map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
               ))}
-            </tbody>
-          </table>
-        </div>
-        </>
-      )}
-
-      {tab === "contacts" && (
-        <div className="space-y-4">
-          {contacts.length === 0 ? (
-            <p className="text-zinc-500 text-sm">No contact submissions yet.</p>
-          ) : (
-            contacts.map((c) => (
-              <div key={c.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-emerald-400" />
-                    <span className="text-white font-medium">{c.name}</span>
-                    <span className="text-zinc-500 text-sm">{c.email}</span>
-                  </div>
-                  <span className="text-xs text-zinc-500">{new Date(c.createdAt).toLocaleString()}</span>
-                </div>
-                <div className="mb-2">
-                  <span className="inline-flex rounded-full bg-zinc-900 px-2.5 py-0.5 text-xs font-medium text-zinc-400 border border-zinc-800">
-                    {c.subject}
-                  </span>
-                </div>
-                <p className="text-sm text-zinc-300 whitespace-pre-wrap">{c.message}</p>
-              </div>
-            ))
+          </select>
+          {resolveId && (
+            <select
+              value={resolveOption}
+              onChange={(e) => setResolveOption(e.target.value)}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="">Select winning option</option>
+              {predictions
+                .find((p) => p.id === resolveId)
+                ?.options?.map((opt: string) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+            </select>
           )}
-        </div>
-      )}
+          <button
+            type="submit"
+            disabled={resolving || !resolveId || !resolveOption}
+            className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50 transition"
+          >
+            {resolving ? "Resolving..." : "Resolve & Award Points"}
+          </button>
+        </form>
+      </section>
 
-      {tab === "comments" && (
-        <div className="space-y-4">
-          {allComments.length === 0 ? (
-            <p className="text-zinc-500 text-sm">No comments yet.</p>
-          ) : (
-            allComments.map((c) => (
-              <div key={c.id} className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-4 h-4 text-emerald-400" />
-                    <span className="text-white font-medium">{c.user?.name || c.user?.email || "Anonymous"}</span>
-                    <span className="text-xs text-zinc-500">on</span>
-                    <a href={`/markets/${c.market?.slug || c.market?.id}`} className="text-sm text-emerald-400 hover:underline">
-                      {c.market?.title || "Unknown market"}
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">{new Date(c.createdAt).toLocaleString()}</span>
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Delete this comment?")) return;
-                        const res = await fetch(`/api/markets/${c.marketId}/comments/${c.id}`, { method: "DELETE" });
-                        if (res.ok) {
-                          setAllComments((prev) => prev.filter((x) => x.id !== c.id));
-                        } else {
-                          alert("Failed to delete comment");
-                        }
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-red-950 text-zinc-500 hover:text-red-400 transition"
-                      title="Delete comment"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-sm text-zinc-300 whitespace-pre-wrap">{c.content}</p>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {/* Control Panel */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-red-400" />
+          Control Panel
+        </h2>
 
-      {tab === "beta" && (
-        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-zinc-900 text-zinc-400">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Province</th>
-                <th className="px-4 py-3">Message</th>
-                <th className="px-4 py-3">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {betaSignups.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-zinc-500 text-sm">
-                    No beta signups yet.
-                  </td>
-                </tr>
-              ) : (
-                betaSignups.map((b) => (
-                  <tr key={b.id} className="hover:bg-zinc-900/50">
-                    <td className="px-4 py-3 text-white font-medium">{b.name}</td>
-                    <td className="px-4 py-3 text-zinc-300">{b.email}</td>
-                    <td className="px-4 py-3 text-zinc-300">{b.province}</td>
-                    <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">{b.message || "—"}</td>
-                    <td className="px-4 py-3 text-zinc-500 text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {tab === "withdrawals" && (
-        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-zinc-900 text-zinc-400">
-              <tr>
-                <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">To Address</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {withdrawals.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-zinc-500 text-sm">
-                    No withdrawals yet.
-                  </td>
-                </tr>
-              ) : (
-                withdrawals.map((w) => (
-                  <tr key={w.id} className="hover:bg-zinc-900/50">
-                    <td className="px-4 py-3 text-white font-medium">
-                      {w.user?.name || w.user?.email || w.user?.walletAddress?.slice(0, 10) + "..." || "Unknown"}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-300">${w.amount.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-zinc-400 font-mono text-xs">{w.toAddress.slice(0, 12)}...{w.toAddress.slice(-6)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        w.status === "PENDING" ? "bg-amber-950 text-amber-400" :
-                        w.status === "PROCESSING" ? "bg-cyan-950 text-cyan-400" :
-                        w.status === "COMPLETED" ? "bg-emerald-950 text-emerald-400" :
-                        "bg-red-950 text-red-400"
-                      }`}>
-                        {w.status}
+        {/* Users */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Users ({users.length})
+          </h3>
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search users by name or email..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 pl-10 pr-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {users
+              .filter((u) =>
+                !userSearch ||
+                u.display_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                u.email?.toLowerCase().includes(userSearch.toLowerCase())
+              )
+              .map((u) => (
+                <div key={u.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{u.display_name || u.email?.split("@")[0]}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${u.role === "admin" ? "bg-amber-500/20 text-amber-400" : "bg-zinc-700 text-zinc-400"}`}>
+                        {u.role}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-500 text-xs">{new Date(w.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {w.status === "PENDING" && (
-                          <>
-                            <button
-                              onClick={() => {
-                                const txHash = prompt("Enter transaction hash (optional):");
-                                updateWithdrawal(w.id, "COMPLETED", txHash || undefined);
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-emerald-950 text-zinc-500 hover:text-emerald-400 transition"
-                              title="Mark as completed"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm("Reject this withdrawal? The amount will be refunded to the user's balance.")) {
-                                  updateWithdrawal(w.id, "FAILED");
-                                }
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-red-950 text-zinc-500 hover:text-red-400 transition"
-                              title="Reject & refund"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        {w.txHash && (
-                          <a
-                            href={`https://polygonscan.com/tx/${w.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 transition"
-                            title="View on Polygonscan"
-                          >
-                            <ArrowUpRight className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">
+                      {u.email} · {u.total_points} pts · {u.correct_picks}/{u.total_picks} correct
+                    </div>
+                  </div>
+                  {u.role !== "admin" && (
+                    <button
+                      onClick={() => handleDeleteUser(u.id)}
+                      disabled={deletingUser === u.id}
+                      className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {deletingUser === u.id ? "..." : "Delete"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            {users.length === 0 && (
+              <p className="text-sm text-zinc-600 text-center py-4">No users found.</p>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Predictions */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Trophy className="w-4 h-4" />
+            Predictions ({predictions.length})
+          </h3>
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search predictions..."
+              value={predSearch}
+              onChange={(e) => setPredSearch(e.target.value)}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 pl-10 pr-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {predictions
+              .filter((p) =>
+                !predSearch ||
+                p.title?.toLowerCase().includes(predSearch.toLowerCase()) ||
+                p.description?.toLowerCase().includes(predSearch.toLowerCase())
+              )
+              .map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white truncate">{p.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === "resolved" ? "bg-emerald-500/20 text-emerald-400" : p.status === "cancelled" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>
+                        {p.status}
+                      </span>
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">
+                      {p.category} · {p.points} pts · {new Date(p.event_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeletePrediction(p.id)}
+                    disabled={deletingPred === p.id}
+                    className="ml-3 text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    {deletingPred === p.id ? "..." : "Delete"}
+                  </button>
+                </div>
+              ))}
+            {predictions.length === 0 && (
+              <p className="text-sm text-zinc-600 text-center py-4">No predictions found.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Comments */}
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Comments ({comments.length})
+          </h3>
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search comments..."
+              value={commentSearch}
+              onChange={(e) => setCommentSearch(e.target.value)}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 pl-10 pr-4 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {comments
+              .filter((c) =>
+                !commentSearch ||
+                c.content?.toLowerCase().includes(commentSearch.toLowerCase()) ||
+                c.profiles?.display_name?.toLowerCase().includes(commentSearch.toLowerCase()) ||
+                c.predictions?.title?.toLowerCase().includes(commentSearch.toLowerCase())
+              )
+              .map((c) => (
+                <div key={c.id} className="flex items-start justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <span className="text-zinc-300 font-medium">{c.profiles?.display_name || "Unknown"}</span>
+                      <span>on</span>
+                      <span className="text-zinc-300 truncate">{c.predictions?.title || "Unknown"}</span>
+                    </div>
+                    <p className="text-sm text-white mt-1 break-words">{c.content}</p>
+                    <p className="text-xs text-zinc-600 mt-0.5">{new Date(c.created_at).toLocaleString()}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteComment(c.id)}
+                    disabled={deletingComment === c.id}
+                    className="text-xs bg-red-500/10 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/20 transition flex items-center gap-1 disabled:opacity-50 shrink-0"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    {deletingComment === c.id ? "..." : "Delete"}
+                  </button>
+                </div>
+              ))}
+            {comments.length === 0 && (
+              <p className="text-sm text-zinc-600 text-center py-4">No comments found.</p>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
