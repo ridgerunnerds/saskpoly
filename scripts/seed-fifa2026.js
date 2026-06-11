@@ -77,8 +77,13 @@ async function insertPredictions(games) {
 async function main() {
   const allGames = [];
   const dates = [];
-  for (let d = 11; d <= 27; d++) {
+  // Group stage
+  for (let d = 11; d <= 30; d++) {
     dates.push(`202606${String(d).padStart(2, "0")}`);
+  }
+  // Knockout rounds
+  for (let d = 1; d <= 19; d++) {
+    dates.push(`202607${String(d).padStart(2, "0")}`);
   }
 
   for (const date of dates) {
