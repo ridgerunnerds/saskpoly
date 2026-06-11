@@ -39,6 +39,7 @@ export default function PredictionsPage() {
       if (sport === "hockey" && p.event_type !== "nhl") return false;
       if (sport === "basketball" && p.event_type !== "nba") return false;
       if (sport === "football" && p.event_type !== "nfl") return false;
+      if (sport === "soccer" && p.event_type !== "fifa2026") return false;
     }
     return true;
   });
@@ -79,6 +80,7 @@ export default function PredictionsPage() {
             <option value="hockey">Hockey (NHL)</option>
             <option value="basketball">Basketball (NBA)</option>
             <option value="football">Football (NFL)</option>
+            <option value="soccer">Soccer (FIFA 2026)</option>
           </select>
           <select
             value={status}

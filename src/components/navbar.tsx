@@ -16,6 +16,7 @@ import {
   Newspaper,
   Flame,
   Gift,
+  Globe,
 } from "lucide-react";
 
 export function Navbar() {
@@ -107,6 +108,10 @@ export function Navbar() {
                   Jays
                 </Link>
               )}
+              <Link href="/fifa2026" className="text-sm text-zinc-300 hover:text-white transition flex items-center gap-1">
+                <Globe className="w-4 h-4 text-emerald-400" />
+                FIFA 2026
+              </Link>
               {user && (
                 <Link href="/blog" className="text-sm text-zinc-300 hover:text-white transition flex items-center gap-1">
                   <Newspaper className="w-4 h-4 text-emerald-400" />
@@ -182,6 +187,7 @@ export function Navbar() {
             <Link href="/challenge" className="block text-sm text-orange-300">Daily Challenge</Link>
             <Link href="/referral" className="block text-sm text-zinc-300">Invite Friends</Link>
             {user && <Link href="/jays" className="block text-sm text-zinc-300">Jays</Link>}
+            <Link href="/fifa2026" className="block text-sm text-zinc-300">FIFA 2026</Link>
             {user && <Link href="/blog" className="block text-sm text-zinc-300">Blog</Link>}
             <Link href="/leaderboard" className="block text-sm text-zinc-300">Leaderboard</Link>
             {profile?.role === "admin" && (

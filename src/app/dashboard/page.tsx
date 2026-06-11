@@ -61,6 +61,7 @@ export default function DashboardPage() {
     if (sportFilter === "hockey") return p.event_type === "nhl";
     if (sportFilter === "basketball") return p.event_type === "nba";
     if (sportFilter === "football") return p.event_type === "nfl";
+    if (sportFilter === "soccer") return p.event_type === "fifa2026";
     return true;
   });
 
@@ -134,6 +135,7 @@ export default function DashboardPage() {
             <option value="hockey">Hockey (NHL)</option>
             <option value="basketball">Basketball (NBA)</option>
             <option value="football">Football (NFL)</option>
+            <option value="soccer">Soccer (FIFA 2026)</option>
           </select>
         </div>
       </div>

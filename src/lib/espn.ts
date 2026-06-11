@@ -18,6 +18,7 @@ const ESPN_SPORTS: Record<string, string> = {
   mlb: "baseball/mlb",
   mls: "soccer/usa.1",
   epl: "soccer/eng.1",
+  fifa2026: "soccer/fifa.world",
 };
 
 export async function fetchESPNSchedule(

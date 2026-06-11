@@ -600,6 +600,7 @@ export default function AdminPage() {
             <option value="mlb">MLB</option>
             <option value="mls">MLS</option>
             <option value="epl">EPL</option>
+            <option value="fifa2026">FIFA 2026</option>
           </select>
           <input
             type="number"
