@@ -16,7 +16,6 @@ import {
   Newspaper,
   Flame,
   Gift,
-  MapleLeaf,
 } from "lucide-react";
 
 export function Navbar() {

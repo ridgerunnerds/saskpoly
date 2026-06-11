@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_premium, premium_expires_at, total_points")
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const { userId } = await req.json();
     if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: profile } = await supabase
       .from("profiles")
       .select("total_points, is_premium")

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing userId or platform" }, { status: 400 });
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const today = new Date().toISOString().split("T")[0];
     const { data: existing } = await supabase
       .from("social_shares")

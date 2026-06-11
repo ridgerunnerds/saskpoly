@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase-server";
 export async function POST(req: NextRequest) {
   try {
     const { userId, referralCode } = await req.json();
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check if referral code exists
     const { data: referrer } = await supabase

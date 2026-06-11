@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase";
-import { Trophy, Dices, Coins, ArrowUpDown } from "lucide-react";
-import { toast } from "sonner";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Trophy, Dices, Coins, ArrowUpDown, Loader2 } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -39,7 +35,7 @@ function CoinFlipGame({ user, onPointsChange }: { user: UserProfile; onPointsCha
     const { data: profile } = await supabase.from("profiles").select("total_points").eq("id", user.id).single();
     await supabase.from("profiles").update({ total_points: Math.max(0, (profile?.total_points || 0) + change) }).eq("id", user.id);
     
-    toast.success(didWin ? "You won 50 points!" : "You lost 20 points!", { icon: didWin ? "🎉" : "😢" });
+    alert(didWin ? "🎉 You won 50 points!" : "😢 You lost 20 points!");
     onPointsChange();
   };
 
@@ -54,12 +50,12 @@ function CoinFlipGame({ user, onPointsChange }: { user: UserProfile; onPointsCha
         {flipping ? "?" : result === "heads" ? "H" : result === "tails" ? "T" : "?"}
       </div>
       <div className="flex gap-3 justify-center">
-        <Button onClick={() => flip("heads")} disabled={flipping} variant="outline" className="border-yellow-400 text-yellow-400 hover:bg-yellow-400/10">
+        <button onClick={() => flip("heads")} disabled={flipping} className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-900 border border-yellow-400 text-yellow-400 hover:bg-yellow-400/10 transition disabled:opacity-50">
           Heads
-        </Button>
-        <Button onClick={() => flip("tails")} disabled={flipping} variant="outline" className="border-zinc-400 text-zinc-400 hover:bg-zinc-400/10">
+        </button>
+        <button onClick={() => flip("tails")} disabled={flipping} className="px-4 py-2 rounded-xl text-sm font-medium bg-zinc-900 border border-zinc-400 text-zinc-400 hover:bg-zinc-400/10 transition disabled:opacity-50">
           Tails
-        </Button>
+        </button>
       </div>
       {won !== null && (
         <p className={won ? "text-emerald-400" : "text-red-400"}>
@@ -93,12 +89,12 @@ function HigherLowerGame({ user, onPointsChange }: { user: UserProfile; onPoints
       const points = 10 * newStreak;
       const { data: profile } = await supabase.from("profiles").select("total_points").eq("id", user.id).single();
       await supabase.from("profiles").update({ total_points: (profile?.total_points || 0) + points }).eq("id", user.id);
-      toast.success(`Correct! Streak: ${newStreak} — +${points} points!`);
+      alert(`Correct! Streak: ${newStreak} — +${points} points!`);
     } else {
       setStreak(0);
       const { data: profile } = await supabase.from("profiles").select("total_points").eq("id", user.id).single();
       await supabase.from("profiles").update({ total_points: Math.max(0, (profile?.total_points || 0) - 10) }).eq("id", user.id);
-      toast.error("Wrong! Lost 10 points. Streak reset.");
+      alert("Wrong! Lost 10 points. Streak reset.");
     }
     
     setCurrent(n);
@@ -111,12 +107,12 @@ function HigherLowerGame({ user, onPointsChange }: { user: UserProfile; onPoints
       <div className="text-6xl font-bold text-white">{current}</div>
       <p className="text-zinc-400 text-sm">Next number will be...</p>
       <div className="flex gap-3 justify-center">
-        <Button onClick={() => guess(true)} disabled={playing} className="bg-emerald-600 hover:bg-emerald-700">
-          <ArrowUpDown className="w-4 h-4 mr-1" /> Higher
-        </Button>
-        <Button onClick={() => guess(false)} disabled={playing} className="bg-red-600 hover:bg-red-700">
-          <ArrowUpDown className="w-4 h-4 mr-1" /> Lower
-        </Button>
+        <button onClick={() => guess(true)} disabled={playing} className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-50">
+          <ArrowUpDown className="w-4 h-4 inline mr-1" /> Higher
+        </button>
+        <button onClick={() => guess(false)} disabled={playing} className="px-4 py-2 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">
+          <ArrowUpDown className="w-4 h-4 inline mr-1" /> Lower
+        </button>
       </div>
       <p className="text-sm text-emerald-400">Streak: {streak} 🔥</p>
       {next !== null && (
@@ -142,7 +138,13 @@ export default function GamesPage() {
 
   useEffect(() => { fetchUser(); }, []);
 
-  if (loading) return <LoadingSpinner message="Loading games..." />;
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -150,9 +152,9 @@ export default function GamesPage() {
         <Dices className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
         <h1 className="text-3xl font-bold text-white mb-4">Free Games</h1>
         <p className="text-zinc-400 mb-8">Sign in to play mini-games and earn points!</p>
-        <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <a href="/login">Sign In to Play</a>
-        </Button>
+        <a href="/login" className="inline-block px-6 py-3 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition">
+          Sign In to Play
+        </a>
       </div>
     );
   }
@@ -170,29 +172,21 @@ export default function GamesPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Coins className="w-5 h-5 text-yellow-400" />
-              Coin Flip
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CoinFlipGame user={user} onPointsChange={fetchUser} />
-          </CardContent>
-        </Card>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <h2 className="flex items-center gap-2 text-white text-lg font-semibold mb-4">
+            <Coins className="w-5 h-5 text-yellow-400" />
+            Coin Flip
+          </h2>
+          <CoinFlipGame user={user} onPointsChange={fetchUser} />
+        </div>
 
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <ArrowUpDown className="w-5 h-5 text-emerald-400" />
-              Higher or Lower
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <HigherLowerGame user={user} onPointsChange={fetchUser} />
-          </CardContent>
-        </Card>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <h2 className="flex items-center gap-2 text-white text-lg font-semibold mb-4">
+            <ArrowUpDown className="w-5 h-5 text-emerald-400" />
+            Higher or Lower
+          </h2>
+          <HigherLowerGame user={user} onPointsChange={fetchUser} />
+        </div>
       </div>
 
       <div className="mt-8 text-center">

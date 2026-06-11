@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const today = new Date().toISOString().split("T")[0];
 
     // Get or create today's daily challenge
