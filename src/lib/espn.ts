@@ -52,6 +52,8 @@ export async function fetchESPNSchedule(
         if (home?.winner) winner = home.team.displayName;
         if (away?.winner) winner = away.team.displayName;
 
+        const isPre = event.status?.type?.state === "pre";
+
         allGames.push({
           id: event.id,
           name: event.name,
@@ -60,8 +62,8 @@ export async function fetchESPNSchedule(
           status: event.status?.type?.description || "Scheduled",
           homeTeam: home?.team?.displayName || "TBD",
           awayTeam: away?.team?.displayName || "TBD",
-          homeScore: home?.score ? parseInt(home.score) : undefined,
-          awayScore: away?.score ? parseInt(away.score) : undefined,
+          homeScore: !isPre && home?.score !== undefined ? parseInt(home.score) : undefined,
+          awayScore: !isPre && away?.score !== undefined ? parseInt(away.score) : undefined,
           winner,
         });
       }
@@ -116,6 +118,8 @@ export async function fetchESPNGameResult(
     if (home?.winner) winner = home.team.displayName;
     if (away?.winner) winner = away.team.displayName;
 
+    const isPre = data.header?.status?.type?.state === "pre";
+
     return {
       id: gameId,
       name: data.header?.name || "",
@@ -124,8 +128,8 @@ export async function fetchESPNGameResult(
       status: data.header?.status?.type?.description || "Scheduled",
       homeTeam: home?.team?.displayName || "TBD",
       awayTeam: away?.team?.displayName || "TBD",
-      homeScore: home?.score ? parseInt(home.score) : undefined,
-      awayScore: away?.score ? parseInt(away.score) : undefined,
+      homeScore: !isPre && home?.score !== undefined ? parseInt(home.score) : undefined,
+      awayScore: !isPre && away?.score !== undefined ? parseInt(away.score) : undefined,
       winner,
     };
   } catch {

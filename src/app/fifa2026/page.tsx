@@ -33,6 +33,7 @@ interface Prediction {
   event_date: string;
   status: string;
   event_type: string;
+  source_id: string;
 }
 
 function formatTime(iso: string) {
@@ -45,7 +46,7 @@ export default function FIFA2026Page() {
   const [games, setGames] = useState<FIFAGame[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [days, setDays] = useState(7);
+  const [days, setDays] = useState(14);
   const [error, setError] = useState("");
 
   const loadGames = useCallback(async () => {
@@ -69,9 +70,8 @@ export default function FIFA2026Page() {
   const loadPredictions = useCallback(async () => {
     const { data } = await supabase
       .from("predictions")
-      .select("id, title, event_date, status, event_type")
+      .select("id, title, event_date, status, event_type, source_id")
       .eq("event_type", "fifa2026")
-      .eq("status", "upcoming")
       .order("event_date", { ascending: true });
     setPredictions(data || []);
   }, [supabase]);
@@ -81,10 +81,8 @@ export default function FIFA2026Page() {
     loadPredictions();
   }, [loadGames, loadPredictions]);
 
-  const hasPrediction = (gameName: string) => {
-    return predictions.find((p) =>
-      p.title.toLowerCase().includes(gameName.toLowerCase())
-    );
+  const hasPrediction = (gameId: string) => {
+    return predictions.find((p) => p.source_id === gameId);
   };
 
   // Group games by date
@@ -130,7 +128,7 @@ export default function FIFA2026Page() {
               {days}
             </span>
             <button
-              onClick={() => setDays(Math.min(30, days + 1))}
+              onClick={() => setDays(Math.min(45, days + 1))}
               className="p-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition"
             >
               <ChevronRight className="w-4 h-4" />
@@ -193,7 +191,7 @@ export default function FIFA2026Page() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {grouped[date].map((game) => {
-              const pred = hasPrediction(game.name);
+              const pred = hasPrediction(game.id);
               const isLive = game.status.toLowerCase().includes("in progress") || game.status.toLowerCase().includes("live");
               const isFinished = game.status.toLowerCase().includes("final") || game.winner;
 
