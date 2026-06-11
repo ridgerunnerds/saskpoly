@@ -248,3 +248,48 @@ CREATE POLICY "Authors can delete their own posts"
 
 CREATE INDEX idx_posts_slug ON public.posts(slug);
 CREATE INDEX idx_posts_published ON public.posts(published, created_at DESC);
+
+-- ============================================================
+-- DAILY CHALLENGES
+-- ============================================================
+CREATE TABLE public.daily_challenges (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  challenge_date DATE NOT NULL UNIQUE,
+  prediction_id UUID NOT NULL REFERENCES public.predictions(id),
+  bonus_points INTEGER NOT NULL DEFAULT 50,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- REFERRALS
+-- ============================================================
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES public.profiles(id);
+
+-- Generate referral codes for existing users
+UPDATE public.profiles 
+SET referral_code = SUBSTRING(MD5(RANDOM()::TEXT), 1, 8)
+WHERE referral_code IS NULL;
+
+-- Social shares table
+CREATE TABLE IF NOT EXISTS public.social_shares (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL,
+  prediction_id UUID REFERENCES public.predictions(id) ON DELETE SET NULL,
+  shared_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_shares_user_id ON public.social_shares(user_id);
+
+-- Premium tier columns on profiles
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS premium_expires_at TIMESTAMPTZ;
+
+-- Ensure referral_code column exists
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES public.profiles(id);
+
+-- Backfill referral codes
+UPDATE public.profiles SET referral_code = SUBSTRING(MD5(RANDOM()::TEXT), 1, 8) WHERE referral_code IS NULL;

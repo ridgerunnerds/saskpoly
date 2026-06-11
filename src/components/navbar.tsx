@@ -8,14 +8,15 @@ import {
   X,
   Shield,
   Trophy,
-  MessageSquare,
   LogIn,
   LogOut,
   User,
   Bell,
-  Activity,
   Zap,
   Newspaper,
+  Flame,
+  Gift,
+  MapleLeaf,
 } from "lucide-react";
 
 export function Navbar() {
@@ -37,7 +38,6 @@ export function Navbar() {
           .single();
         setProfile(data);
 
-        // Load unread notification count for admins
         if (data?.role === "admin") {
           const { count } = await supabase
             .from("notifications")
@@ -83,7 +83,8 @@ export function Navbar() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-white tracking-wider">SASKPOLY.XYZ</span>
+              <span className="text-xl font-bold text-white tracking-wider">SASKPOLY</span>
+              <span className="text-xs bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">CA</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-6">
@@ -92,6 +93,14 @@ export function Navbar() {
               </Link>
               <Link href="/predictions" className="text-sm text-zinc-300 hover:text-white transition">
                 Predictions
+              </Link>
+              <Link href="/challenge" className="text-sm text-orange-300 hover:text-orange-200 transition flex items-center gap-1">
+                <Flame className="w-4 h-4" />
+                Daily
+              </Link>
+              <Link href="/referral" className="text-sm text-zinc-300 hover:text-white transition flex items-center gap-1">
+                <Gift className="w-4 h-4" />
+                Invite
               </Link>
               {user && (
                 <Link href="/jays" className="text-sm text-zinc-300 hover:text-white transition flex items-center gap-1">
@@ -171,6 +180,8 @@ export function Navbar() {
           <div className="md:hidden border-t border-zinc-800 px-4 py-4 space-y-3">
             <Link href="/dashboard" className="block text-sm text-emerald-400 font-medium">Dashboard</Link>
             <Link href="/predictions" className="block text-sm text-zinc-300">Predictions</Link>
+            <Link href="/challenge" className="block text-sm text-orange-300">Daily Challenge</Link>
+            <Link href="/referral" className="block text-sm text-zinc-300">Invite Friends</Link>
             {user && <Link href="/jays" className="block text-sm text-zinc-300">Jays</Link>}
             {user && <Link href="/blog" className="block text-sm text-zinc-300">Blog</Link>}
             <Link href="/leaderboard" className="block text-sm text-zinc-300">Leaderboard</Link>
